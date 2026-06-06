@@ -1,15 +1,32 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-import { serverEnv } from "@/lib/env/server";
+import { getServerEnv } from "@/lib/env/server";
+
+const PROTECTED_PREFIXES = ["/dashboard", "/settings"];
+const AUTH_ROUTES = ["/login", "/signup", "/sign-up"];
+
+function isProtectedRoute(pathname: string) {
+  return PROTECTED_PREFIXES.some(
+    (protectedPrefix) =>
+      pathname === protectedPrefix || pathname.startsWith(`${protectedPrefix}/`),
+  );
+}
+
+function isAuthRoute(pathname: string) {
+  return AUTH_ROUTES.some(
+    (authRoute) => pathname === authRoute || pathname.startsWith(`${authRoute}/`),
+  );
+}
 
 export async function updateSession(request: NextRequest) {
+  const env = getServerEnv();
   let response = NextResponse.next({
     request,
   });
 
   const supabase = createServerClient(
-    serverEnv.NEXT_PUBLIC_SUPABASE_URL,
-    serverEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -32,7 +49,30 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  if (isProtectedRoute(pathname) && !user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    redirectUrl.searchParams.set(
+      "next",
+      `${pathname}${request.nextUrl.search}`,
+    );
+
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (isAuthRoute(pathname) && user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/dashboard";
+    redirectUrl.search = "";
+
+    return NextResponse.redirect(redirectUrl);
+  }
 
   return response;
 }

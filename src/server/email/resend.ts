@@ -1,6 +1,8 @@
 import { Resend } from "resend";
-import { serverEnv } from "@/lib/env/server";
+import { getServerEnv } from "@/lib/env/server";
 
-export const resend = new Resend(serverEnv.RESEND_API_KEY);
+const env = getServerEnv();
 
-export const defaultFromEmail = serverEnv.RESEND_FROM_EMAIL;
+export const resend = new Resend(env.RESEND_API_KEY);
+
+export const defaultFromEmail = env.RESEND_FROM_EMAIL;
