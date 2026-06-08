@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,7 +17,7 @@ export function ClaimHandleForm() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<{ handle: string }>({
-    resolver: zodResolver(handleSchema),
+    resolver: zodResolver(z.object({ handle: handleSchema })),
     defaultValues: { handle: "" },
   });
 

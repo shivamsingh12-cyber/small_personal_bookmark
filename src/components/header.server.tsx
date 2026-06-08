@@ -1,6 +1,7 @@
 import Link from "next/link";
 import LogoutButton from "./logout-button";
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export default async function HeaderServer() {
   const supabase = await createClient();

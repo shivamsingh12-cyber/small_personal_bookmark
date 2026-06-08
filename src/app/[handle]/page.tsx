@@ -2,12 +2,10 @@ import { listPublicBookmarksByHandle } from "@/server/bookmarks/list-bookmarks";
 import { EmptyState } from "@/components/ui/empty-state";
 import { notFound } from "next/navigation";
 
-type Props = {
-  params: { handle: string };
-};
-
-export default async function ProfilePage({ params }: Props) {
-  const { handle } = await params;
+export default async function ProfilePage(props: unknown) {
+  const p = props as { params?: { handle: string } | Promise<{ handle: string }> } | undefined;
+  const params = p?.params as { handle: string } | Promise<{ handle: string }> | undefined;
+  const { handle } = (await params) ?? ({} as { handle: string });
 
   if (!handle) {
     notFound();
