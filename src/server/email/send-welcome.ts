@@ -8,7 +8,7 @@ function buildWelcomeHtml(handle: string, appUrl: string) {
       <h1 style="color:#142013">Welcome to BookmarkApp, @${handle}!</h1>
       <p>Thanks for signing up. You're all set — start saving and sharing bookmarks.</p>
       <p>
-        Visit your dashboard: <a href="${appUrl}/dashboard">${appUrl}/dashboard</a>
+        Visit your dashboard by opening your app and navigating to <strong>/dashboard</strong>.
       </p>
       <hr />
       <p style="color:#697565; font-size:12px">If you didn't sign up, you can ignore this email.</p>
