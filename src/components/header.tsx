@@ -33,10 +33,6 @@ export default function Header({ user }: { user: User | null }) {
           <Link href="/" className="text-lg font-semibold text-[#142013]">
             BookmarkApp
           </Link>
-          <nav className="hidden gap-3 md:flex">
-            <Link href="/dashboard" className="text-sm text-[#495747] hover:underline">Dashboard</Link>
-            <Link href="/settings" className="text-sm text-[#495747] hover:underline">Settings</Link>
-          </nav>
         </div>
 
         <div className="flex items-center gap-3">
