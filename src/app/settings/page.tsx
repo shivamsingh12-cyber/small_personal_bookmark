@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/auth";
+import { ClaimHandleForm } from "./claim-handle-form";
 
 export default async function SettingsPage() {
   const user = await getUser();
@@ -25,6 +26,9 @@ export default async function SettingsPage() {
         <div className="mt-8 rounded-2xl border bg-[#f8faf5] p-5">
           <p className="text-sm font-medium text-[#142013]">Authenticated user</p>
           <p className="mt-2 text-sm text-[#495747]">{user.email}</p>
+        </div>
+        <div className="mt-6">
+          <ClaimHandleForm />
         </div>
       </section>
     </main>

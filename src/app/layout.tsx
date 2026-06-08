@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ToastProvider from "@/components/ui/toast-provider";
+import Header from "@/components/header.client";
 
 export const metadata: Metadata = {
   title: "Bookmark App",
@@ -13,7 +15,12 @@ type RootLayoutProps = Readonly<{
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Header />
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   );
 }

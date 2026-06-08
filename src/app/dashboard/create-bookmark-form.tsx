@@ -2,10 +2,8 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
-import {
-  createBookmarkAction,
-  initialCreateBookmarkState,
-} from "./actions";
+import { createBookmarkAction } from "./actions";
+import { initialCreateBookmarkState } from "./action-states";
 
 function SubmitButton() {
   const { pending } = useFormStatus();

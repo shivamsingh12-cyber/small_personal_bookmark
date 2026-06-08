@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { getServerEnv } from "@/lib/env/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { sendWelcomeEmail } from "@/server/email/send-welcome";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { signUpSchema, type SignUpInput } from "@/lib/validation/auth";
 
@@ -82,7 +83,11 @@ export async function signUpWithEmail(input: SignUpInput) {
 
   try {
     handle = await createUniqueHandle(email);
-  } catch {
+  } catch (err) {
+    // Log the underlying error for diagnostics
+    // eslint-disable-next-line no-console
+    console.error("createUniqueHandle error:", err);
+
     return {
       error: "Unable to prepare the user profile.",
     };
@@ -96,11 +101,29 @@ export async function signUpWithEmail(input: SignUpInput) {
   });
 
   if (profileError) {
+    // Log details to help diagnose DB errors (unique constraint, permissions, etc.)
+    // eslint-disable-next-line no-console
+    console.error("profile insert error:", profileError);
+
     await adminClient.auth.admin.deleteUser(userId);
 
     return {
       error: "Account created, but profile setup failed. Please try again.",
     };
+  }
+
+  // Send welcome email but don't fail account creation if email sending fails.
+  try {
+    const sendResult = await sendWelcomeEmail(email, handle);
+
+    if ("error" in sendResult) {
+      // Log the error server-side for diagnostics
+      // eslint-disable-next-line no-console
+      console.error("Failed to send welcome email:", sendResult.error);
+    }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("Unexpected error sending welcome email:", e);
   }
 
   return {

@@ -1,3 +1,4 @@
+
 function BookmarkCardSkeleton() {
   return (
     <div className="rounded-3xl border bg-white p-5 shadow-sm">

@@ -2,32 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   createBookmarkSchema,
   updateBookmarkSchema,
 } from "@/lib/validation/bookmark";
-
-type BookmarkActionState = {
-  error: string | null;
-  success: string | null;
-  fieldErrors?: {
-    title?: string[];
-    url?: string[];
-  };
-};
-
-export type CreateBookmarkActionState = BookmarkActionState;
-export type UpdateBookmarkActionState = BookmarkActionState;
-
-export const initialCreateBookmarkState: CreateBookmarkActionState = {
-  error: null,
-  success: null,
-};
-
-export const initialUpdateBookmarkState: UpdateBookmarkActionState = {
-  error: null,
-  success: null,
-};
+import {
+  CreateBookmarkActionState,
+  UpdateBookmarkActionState,
+  DeleteBookmarkActionState,
+} from "./action-states";
 
 export async function createBookmarkAction(
   _previousState: CreateBookmarkActionState,
@@ -66,7 +50,10 @@ export async function createBookmarkAction(
   }
 
   const { title, url, isPublic } = parsedInput.data;
-  const { error } = await supabase.from("bookmarks").insert({
+  // Use service role client for writes to avoid RLS issues in server actions.
+  const adminClient = createServiceRoleClient();
+
+  const { error } = await adminClient.from("bookmarks").insert({
     user_id: user.id,
     title,
     url,
@@ -74,6 +61,10 @@ export async function createBookmarkAction(
   });
 
   if (error) {
+    // Log DB error for diagnostics, do not expose raw DB details to client
+    // eslint-disable-next-line no-console
+    console.error("bookmark insert error:", error);
+
     return {
       error: "Unable to save the bookmark right now.",
       success: null,
@@ -126,7 +117,10 @@ export async function updateBookmarkAction(
   }
 
   const { id, title, url, isPublic } = parsedInput.data;
-  const { data, error } = await supabase
+  // Use service role client for update as well, but still constrain by user_id to enforce ownership.
+  const adminClient = createServiceRoleClient();
+
+  const { data, error } = await adminClient
     .from("bookmarks")
     .update({
       title,
@@ -139,6 +133,9 @@ export async function updateBookmarkAction(
     .maybeSingle();
 
   if (error) {
+    // eslint-disable-next-line no-console
+    console.error("bookmark update error:", error);
+
     return {
       error: "Unable to update the bookmark right now.",
       success: null,
@@ -157,5 +154,66 @@ export async function updateBookmarkAction(
   return {
     error: null,
     success: "Bookmark updated successfully.",
+  };
+}
+
+export async function deleteBookmarkAction(
+  _previousState: DeleteBookmarkActionState,
+  formData: FormData,
+): Promise<DeleteBookmarkActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      error: "You must be signed in to delete a bookmark.",
+      success: null,
+    };
+  }
+
+  const bookmarkId = formData.get("id");
+
+  if (typeof bookmarkId !== "string" || !bookmarkId) {
+    return {
+      error: "Invalid bookmark identifier.",
+      success: null,
+    };
+  }
+
+  const adminClient = createServiceRoleClient();
+
+  const { data, error } = await adminClient
+    .from("bookmarks")
+    .delete()
+    .eq("id", bookmarkId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error("bookmark delete error:", error);
+
+    return {
+      error: "Unable to delete the bookmark right now.",
+      success: null,
+    };
+  }
+
+  if (!data) {
+    return {
+      error: "Bookmark not found or you do not have permission to delete it.",
+      success: null,
+    };
+  }
+
+  revalidatePath("/dashboard");
+
+  return {
+    error: null,
+    success: "Bookmark deleted successfully.",
   };
 }

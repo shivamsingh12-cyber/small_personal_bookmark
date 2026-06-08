@@ -1,19 +1,19 @@
-import { redirect } from "next/navigation";
-import { getUser } from "@/lib/supabase/auth";
-import { listBookmarksForCurrentUser } from "@/server/bookmarks/list-bookmarks";
-import { CreateBookmarkForm } from "./create-bookmark-form";
-import { EditBookmarkForm } from "./edit-bookmark-form";
+import { listPublicBookmarksByHandle } from "@/server/bookmarks/list-bookmarks";
 import { EmptyState } from "@/components/ui/empty-state";
-import SignedInBox from "./signed-in-box.client";
+import { notFound } from "next/navigation";
 
-export default async function DashboardPage() {
-  const user = await getUser();
+type Props = {
+  params: { handle: string };
+};
 
-  if (!user) {
-    redirect("/login");
+export default async function ProfilePage({ params }: Props) {
+  const { handle } = await params;
+
+  if (!handle) {
+    notFound();
   }
 
-  const bookmarks = await listBookmarksForCurrentUser();
+  const bookmarks = await listPublicBookmarksByHandle(handle as string);
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-16">
@@ -21,30 +21,24 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#4d5b48]">
-              Dashboard
+              Profile
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-[#142013]">
-              Your bookmarks
+              @{handle}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-[#495747]">
-              Review everything saved to your account, including visibility
-              status for each bookmark.
+              Public bookmarks saved by this user.
             </p>
           </div>
-          <SignedInBox email={user.email} />
         </div>
       </section>
 
-      <section className="mt-8">
-        <CreateBookmarkForm />
-      </section>
-
-      {bookmarks.length === 0 ? (
-        <EmptyState
-          title="No bookmarks yet"
-          description="Your library is empty. Once bookmarks are created, they will appear here with their title, destination URL, and public visibility status."
-        />
-      ) : (
+          {bookmarks.length === 0 ? (
+            <EmptyState
+              title="No public bookmarks"
+              description="This user hasn't shared any bookmarks yet."
+            />
+          ) : (
         <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {bookmarks.map((bookmark) => (
             <article
@@ -52,14 +46,8 @@ export default async function DashboardPage() {
               className="flex h-full flex-col rounded-[2rem] border bg-white p-5 shadow-sm"
             >
               <div className="flex items-start justify-between gap-4">
-                <span
-                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] ${
-                    bookmark.is_public
-                      ? "bg-[#e7f4e1] text-[#295f2d]"
-                      : "bg-[#f1f4ef] text-[#495747]"
-                  }`}
-                >
-                  {bookmark.is_public ? "Public" : "Private"}
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] bg-[#e7f4e1] text-[#295f2d]`}>
+                  Public
                 </span>
               </div>
 
@@ -81,8 +69,6 @@ export default async function DashboardPage() {
                   Saved {new Date(bookmark.created_at).toLocaleDateString()}
                 </p>
               </div>
-
-              <EditBookmarkForm bookmark={bookmark} />
             </article>
           ))}
         </section>
